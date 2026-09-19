@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Remind Neural Forecaster 0.8.2 — local Windows workstation for reproducible CUDA-accelerated forecasting research with MT5 data.">
+  <meta name="color-scheme" content="dark">
+  <title>Remind Neural Forecaster 0.8.2</title>
+  <style>
+    :root {
+      --bg: #071014;
+      --bg-elevated: #0b171c;
+      --panel: rgba(15, 30, 36, 0.84);
+      --panel-strong: #102229;
+      --line: rgba(151, 190, 201, 0.17);
+      --line-strong: rgba(50, 211, 164, 0.32);
+      --text: #edf7f8;
+      --muted: #9db1b7;
+      --accent: #32d3a4;
+      --accent-2: #43b8e8;
+      --warning: #f2c66d;
+      --max: 1180px;
+      --radius: 18px;
+      --shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      background:
+        radial-gradient(circle at 80% -10%, rgba(67, 184, 232, 0.13), transparent 34rem),
+        radial-gradient(circle at 12% 16%, rgba(50, 211, 164, 0.09), transparent 28rem),
+        var(--bg);
+      color: var(--text);
+      font: 16px/1.65 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      opacity: 0.24;
+      background-image:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(to bottom, black, transparent 78%);
+    }
+
+    a { color: inherit; }
+    img { display: block; max-width: 100%; }
+    button { font: inherit; }
+    .wrap { width: min(var(--max), calc(100% - 40px)); margin-inline: auto; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid var(--line);
+      background: rgba(7, 16, 20, 0.82);
+      backdrop-filter: blur(18px);
+    }
+
+    .nav {
+      min-height: 70px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      font-weight: 750;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+    }
+
+    .brand-mark {
+      width: 34px;
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(50, 211, 164, 0.45);
+      border-radius: 10px;
+      color: var(--accent);
+      background: linear-gradient(145deg, rgba(50, 211, 164, .16), rgba(67, 184, 232, .06));
+      box-shadow: inset 0 0 24px rgba(50, 211, 164, .08);
+    }
+
+    .brand-mark svg { width: 20px; height: 20px; }
+    .nav-links { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+    .nav-links a {
+      padding: 8px 10px;
+      border-radius: 8px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .nav-links a:hover, .nav-links a:focus-visible { color: var(--text); background: rgba(255,255,255,.05); }
+
+    .language {
+      display: flex;
+      padding: 3px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: rgba(255,255,255,.025);
+    }
+    .language button {
+      border: 0;
+      padding: 5px 9px;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .language button[aria-pressed="true"] { color: #052018; background: var(--accent); }
+
+    .hero { padding: 92px 0 66px; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border: 1px solid var(--line-strong);
+      border-radius: 999px;
+      color: #b9f5e3;
+      background: rgba(50, 211, 164, .07);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .eyebrow::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px var(--accent); }
+    h1 {
+      max-width: 900px;
+      margin: 24px 0 20px;
+      font-size: clamp(42px, 7vw, 76px);
+      line-height: 1.02;
+      letter-spacing: -.055em;
+    }
+    .gradient { color: transparent; background: linear-gradient(90deg, var(--accent), #8ee4ff); background-clip: text; -webkit-background-clip: text; }
+    .hero-copy { max-width: 780px; margin: 0; color: #b8c9ce; font-size: clamp(18px, 2vw, 21px); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 46px;
+      padding: 0 18px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .button.primary { color: #041a14; background: var(--accent); border-color: var(--accent); }
+    .button.secondary { background: rgba(255,255,255,.035); }
+    .button:hover { transform: translateY(-1px); filter: brightness(1.06); }
+
+    .facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 46px; }
+    .fact { padding: 17px 18px; border: 1px solid var(--line); border-radius: 13px; background: rgba(10, 23, 28, .72); }
+    .fact strong { display: block; margin-bottom: 2px; color: var(--text); font-size: 17px; }
+    .fact span { color: var(--muted); font-size: 13px; }
+
+    .product-frame {
+      position: relative;
+      margin-top: 46px;
+      padding: 9px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: linear-gradient(145deg, rgba(50, 211, 164, .12), rgba(67, 184, 232, .03));
+      box-shadow: var(--shadow);
+    }
+    .product-frame img { border-radius: 12px; }
+    .product-frame::after {
+      content: "Actual application · v0.8.2";
+      position: absolute;
+      right: 20px;
+      bottom: 20px;
+      padding: 6px 10px;
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 8px;
+      background: rgba(3, 10, 13, .78);
+      color: #d9e8ea;
+      font-size: 12px;
+      backdrop-filter: blur(8px);
+    }
+
+    section { padding: 76px 0; scroll-margin-top: 68px; }
+    .section-head { max-width: 750px; margin-bottom: 32px; }
+    .kicker { color: var(--accent); font-size: 13px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+    h2 { margin: 8px 0 12px; font-size: clamp(30px, 4vw, 46px); line-height: 1.1; letter-spacing: -.035em; }
+    .section-head p { margin: 0; color: var(--muted); font-size: 18px; }
+
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .card {
+      min-height: 220px;
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(145deg, rgba(17, 35, 42, .82), rgba(10, 23, 28, .78));
+    }
+    .card-index { color: var(--accent); font: 700 12px/1 ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .card h3 { margin: 24px 0 8px; font-size: 20px; letter-spacing: -.02em; }
+    .card p { margin: 0; color: var(--muted); }
+
+    .workflow { counter-reset: step; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+    .step {
+      counter-increment: step;
+      position: relative;
+      padding: 18px 16px;
+      border-top: 1px solid var(--line-strong);
+      background: linear-gradient(to bottom, rgba(50, 211, 164, .055), transparent);
+    }
+    .step::before { content: "0" counter(step); display: block; margin-bottom: 28px; color: var(--accent); font: 700 12px/1 ui-monospace, Consolas, monospace; }
+    .step strong { display: block; margin-bottom: 6px; }
+    .step span { color: var(--muted); font-size: 14px; }
+
+    .split {
+      display: grid;
+      grid-template-columns: .9fr 1.1fr;
+      gap: 28px;
+      align-items: stretch;
+    }
+    .safety-panel, .tech-panel {
+      padding: 30px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+    }
+    .safety-panel h3, .tech-panel h3 { margin: 0 0 18px; font-size: 23px; }
+    .check-list { margin: 0; padding: 0; list-style: none; }
+    .check-list li { position: relative; padding: 12px 0 12px 28px; border-top: 1px solid rgba(255,255,255,.055); color: #c0d0d4; }
+    .check-list li:first-child { border-top: 0; }
+    .check-list li::before { content: "✓"; position: absolute; left: 0; color: var(--accent); font-weight: 800; }
+    .code-line { display: flex; justify-content: space-between; gap: 20px; padding: 11px 0; border-top: 1px solid rgba(255,255,255,.055); }
+    .code-line:first-of-type { border-top: 0; }
+    .code-line span { color: var(--muted); }
+    .code-line strong { text-align: right; font: 650 14px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; }
+
+    .gallery { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .shot {
+      position: relative;
+      padding: 0;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: var(--panel-strong);
+      color: var(--text);
+      cursor: zoom-in;
+      text-align: left;
+    }
+    .shot img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; transition: transform .25s ease; }
+    .shot:hover img { transform: scale(1.012); }
+    .shot-label { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 14px 16px; }
+    .shot-label strong { font-size: 15px; }
+    .shot-label span { color: var(--muted); font-size: 12px; font-family: ui-monospace, Consolas, monospace; }
+
+    .status {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 16px;
+      padding: 32px;
+      border: 1px solid var(--line-strong);
+      border-radius: 22px;
+      background: linear-gradient(120deg, rgba(50, 211, 164, .09), rgba(67, 184, 232, .045));
+    }
+    .status h2 { margin-top: 0; }
+    .status p { color: var(--muted); }
+    .status-note { padding: 22px; border-radius: 14px; background: rgba(3, 11, 14, .45); }
+    .status-note strong { color: var(--warning); }
+    .status-note p { margin-bottom: 0; font-size: 14px; }
+
+    footer { padding: 38px 0 50px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+    .footer-row { display: flex; justify-content: space-between; gap: 24px; }
+    .footer-row a { color: #cbdadd; }
+
+    dialog {
+      width: min(94vw, 1500px);
+      max-height: 94vh;
+      padding: 0;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 16px;
+      background: #071014;
+      color: var(--text);
+      box-shadow: 0 30px 100px rgba(0,0,0,.7);
+    }
+    dialog::backdrop { background: rgba(0, 5, 7, .84); backdrop-filter: blur(5px); }
+    .dialog-bar { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+    .dialog-bar strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dialog-close { border: 1px solid var(--line); border-radius: 8px; background: rgba(255,255,255,.05); color: var(--text); padding: 6px 10px; cursor: pointer; }
+    dialog img { width: 100%; max-height: calc(94vh - 54px); object-fit: contain; }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .language { margin-left: auto; }
+      .facts, .grid { grid-template-columns: repeat(2, 1fr); }
+      .workflow { grid-template-columns: repeat(2, 1fr); }
+      .split, .status { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 620px) {
+      .wrap { width: min(100% - 24px, var(--max)); }
+      .hero { padding-top: 62px; }
+      h1 { font-size: 43px; }
+      .facts, .grid, .workflow, .gallery { grid-template-columns: 1fr; }
+      .fact { padding: 14px; }
+      section { padding: 56px 0; }
+      .product-frame::after { display: none; }
+      .footer-row { flex-direction: column; }
+      .code-line { flex-direction: column; gap: 2px; }
+      .code-line strong { text-align: left; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="Remind Neural Forecaster">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M4 17V7l4 4 4-7 4 9 4-4v8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        Remind Neural Forecaster
+      </a>
+      <nav class="nav-links" aria-label="Primary navigation">
+        <a href="#capabilities" data-cz="Možnosti" data-en="Capabilities">Možnosti</a>
+        <a href="#workflow" data-cz="Workflow" data-en="Workflow">Workflow</a>
+        <a href="#safety" data-cz="Bezpečnost" data-en="Safety">Bezpečnost</a>
+        <a href="#screenshots" data-cz="Screenshoty" data-en="Screenshots">Screenshoty</a>
+      </nav>
+      <div class="language" aria-label="Language">
+        <button type="button" data-lang="cs" aria-pressed="true">CZ</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap">
+        <span class="eyebrow">Windows · CUDA · MT5 · v0.8.2</span>
+        <h1 data-cz="Lokální výzkumné prostředí pro &lt;span class='gradient'&gt;neuronové forecasty&lt;/span&gt;" data-en="A local research workspace for &lt;span class='gradient'&gt;neural forecasting&lt;/span&gt;">Lokální výzkumné prostředí pro <span class="gradient">neuronové forecasty</span></h1>
+        <p class="hero-copy" data-cz="Reprodukovatelná cesta od uzavřených MT5 barů přes kauzální datasety a CUDA trénink až po out-of-sample evaluaci a živou inferenci — v jednom lokálním Windows procesu." data-en="A reproducible path from closed MT5 bars through causal datasets and CUDA training to out-of-sample evaluation and live inference — inside one local Windows process.">Reprodukovatelná cesta od uzavřených MT5 barů přes kauzální datasety a CUDA trénink až po out-of-sample evaluaci a živou inferenci — v jednom lokálním Windows procesu.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#screenshots" data-cz="Prohlédnout aplikaci" data-en="Explore the application">Prohlédnout aplikaci</a>
+          <a class="button secondary" href="README.md" data-cz="Marketingové podklady" data-en="Marketing materials">Marketingové podklady</a>
+        </div>
+        <div class="facts" aria-label="Product facts">
+          <div class="fact"><strong>127.0.0.1:7470</strong><span data-cz="Loopback-only server" data-en="Loopback-only server">Loopback-only server</span></div>
+          <div class="fact"><strong>LSTM · GRU · RNN</strong><span data-cz="CUDA training backend" data-en="CUDA training backend">CUDA training backend</span></div>
+          <div class="fact"><strong>CUDA / no-CUDA</strong><span data-cz="Dvě podporované sestavy" data-en="Two supported builds">Dvě podporované sestavy</span></div>
+          <div class="fact"><strong>49 / 31</strong><span data-cz="CUDA / no-CUDA testů" data-en="CUDA / no-CUDA tests">CUDA / no-CUDA testů</span></div>
+        </div>
+        <div class="product-frame">
+          <img src="screenshots/01-dashboard.png" width="1920" height="1080" alt="Remind Neural Forecaster system overview">
+        </div>
+      </div>
+    </section>
+
+    <section id="capabilities">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="kicker" data-cz="Verze 0.8.2" data-en="Version 0.8.2">Verze 0.8.2</span>
+          <h2 data-cz="Výzkumné artefakty pod kontrolou" data-en="Research artifacts under control">Výzkumné artefakty pod kontrolou</h2>
+          <p data-cz="Čitelné názvy, neměnné identity, dohledatelné vazby a bezpečný lifecycle datasetů, experimentů i modelů." data-en="Readable names, immutable identities, traceable dependencies, and a safe lifecycle for datasets, experiments, and models.">Čitelné názvy, neměnné identity, dohledatelné vazby a bezpečný lifecycle datasetů, experimentů i modelů.</p>
+        </div>
+        <div class="grid">
+          <article class="card"><span class="card-index">01 / CATALOG</span><h3 data-cz="Srozumitelné názvy" data-en="Human-readable names">Srozumitelné názvy</h3><p data-cz="Snapshoty a experimenty mají upravitelné display names. Interní ID, hashe a vazby zůstávají stabilní a dohledatelné." data-en="Snapshots and experiments have editable display names. Internal IDs, hashes, and references remain stable and traceable.">Snapshoty a experimenty mají upravitelné display names. Interní ID, hashe a vazby zůstávají stabilní a dohledatelné.</p></article>
+          <article class="card"><span class="card-index">02 / DATA</span><h3 data-cz="Kauzální snapshoty" data-en="Causal snapshots">Kauzální snapshoty</h3><p data-cz="Verzované feature/target datasety, train-only normalizace, chronologický split a explicitní diagnostika mezer bez interpolace." data-en="Versioned feature/target datasets, train-only normalization, chronological splits, and explicit gap diagnostics without interpolation.">Verzované feature/target datasety, train-only normalizace, chronologický split a explicitní diagnostika mezer bez interpolace.</p></article>
+          <article class="card"><span class="card-index">03 / CUDA</span><h3 data-cz="GPU trénink a evaluace" data-en="GPU training and evaluation">GPU trénink a evaluace</h3><p data-cz="CUDA BPTT, AdamW, clipping, dropout, validation a jednorázová out-of-sample evaluace nejlepšího checkpointu." data-en="CUDA BPTT, AdamW, clipping, dropout, validation, and a single out-of-sample evaluation of the best checkpoint.">CUDA BPTT, AdamW, clipping, dropout, validation a jednorázová out-of-sample evaluace nejlepšího checkpointu.</p></article>
+          <article class="card"><span class="card-index">04 / RECOVERY</span><h3 data-cz="Trash, Restore, Purge" data-en="Trash, Restore, Purge">Trash, Restore, Purge</h3><p data-cz="Mazání s náhledem závislostí, interním košem, obnovením a výslovně potvrzeným permanentním odstraněním." data-en="Deletion with dependency previews, an internal trash, restoration, and explicitly confirmed permanent removal.">Mazání s náhledem závislostí, interním košem, obnovením a výslovně potvrzeným permanentním odstraněním.</p></article>
+          <article class="card"><span class="card-index">05 / MODELS</span><h3 data-cz="Model Registry" data-en="Model Registry">Model Registry</h3><p data-cz="Nejlepší checkpoint lze registrovat jako kandidáta. Aktivace je explicitní, validovaná a transakční — nikdy automatická." data-en="A best checkpoint can be registered as a candidate. Activation is explicit, validated, and transactional — never automatic.">Nejlepší checkpoint lze registrovat jako kandidáta. Aktivace je explicitní, validovaná a transakční — nikdy automatická.</p></article>
+          <article class="card"><span class="card-index">06 / LIVE</span><h3 data-cz="Živá CUDA inference" data-en="Live CUDA inference">Živá CUDA inference</h3><p data-cz="Nový potvrzený uzavřený bar může asynchronně vytvořit multi-horizon High/Low forecast pro web a MT5 overlay." data-en="A newly confirmed closed bar can asynchronously produce a multi-horizon High/Low forecast for the web UI and MT5 overlay.">Nový potvrzený uzavřený bar může asynchronně vytvořit multi-horizon High/Low forecast pro web a MT5 overlay.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="workflow">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="kicker" data-cz="Reprodukovatelný postup" data-en="Reproducible workflow">Reprodukovatelný postup</span>
+          <h2 data-cz="Od brokerových dat k ověřenému forecastu" data-en="From broker data to an evaluated forecast">Od brokerových dat k ověřenému forecastu</h2>
+        </div>
+        <div class="workflow">
+          <div class="step"><strong data-cz="MT5 ingest" data-en="MT5 ingest">MT5 ingest</strong><span data-cz="Pouze uzavřené bary, revize a auditované korekce." data-en="Closed bars only, revisions, and audited corrections.">Pouze uzavřené bary, revize a auditované korekce.</span></div>
+          <div class="step"><strong data-cz="Dataset snapshot" data-en="Dataset snapshot">Dataset snapshot</strong><span data-cz="Kauzální features, horizonty a train-only scalery." data-en="Causal features, horizons, and train-only scalers.">Kauzální features, horizonty a train-only scalery.</span></div>
+          <div class="step"><strong data-cz="CUDA experiment" data-en="CUDA experiment">CUDA experiment</strong><span data-cz="Fronta, early stopping a nejlepší validační checkpoint." data-en="Queueing, early stopping, and the best validation checkpoint.">Fronta, early stopping a nejlepší validační checkpoint.</span></div>
+          <div class="step"><strong data-cz="OOS evaluace" data-en="OOS evaluation">OOS evaluace</strong><span data-cz="Nedotčený test split a metriky po horizontech." data-en="Untouched test split and per-horizon metrics.">Nedotčený test split a metriky po horizontech.</span></div>
+          <div class="step"><strong data-cz="Explicitní aktivace" data-en="Explicit activation">Explicitní aktivace</strong><span data-cz="Validovaný model pro živou inferenci, bez obchodování." data-en="A validated live-inference model, with no trading.">Validovaný model pro živou inferenci, bez obchodování.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="safety">
+      <div class="wrap split">
+        <div class="safety-panel">
+          <span class="kicker" data-cz="Bezpečnost a obnova" data-en="Safety and recovery">Bezpečnost a obnova</span>
+          <h3 data-cz="Mazání není zkratka bez návratu" data-en="Deletion is not a one-way shortcut">Mazání není zkratka bez návratu</h3>
+          <ul class="check-list">
+            <li data-cz="Dependency preview před každou destruktivní operací" data-en="Dependency preview before every destructive operation">Dependency preview před každou destruktivní operací</li>
+            <li data-cz="Aktivní model a běžící job zůstávají blokující závislostí" data-en="An active model and a running job remain blocking dependencies">Aktivní model a běžící job zůstávají blokující závislostí</li>
+            <li data-cz="Atomický přesun do interního koše s rollbackem" data-en="Atomic move to the internal trash with rollback">Atomický přesun do interního koše s rollbackem</li>
+            <li data-cz="Restore a restart recovery bez změny identity artefaktu" data-en="Restore and restart recovery without changing artifact identity">Restore a restart recovery bez změny identity artefaktu</li>
+            <li data-cz="Permanent Purge vyžaduje samostatné druhé potvrzení" data-en="Permanent Purge requires a separate second confirmation">Permanent Purge vyžaduje samostatné druhé potvrzení</li>
+          </ul>
+        </div>
+        <div class="tech-panel">
+          <span class="kicker" data-cz="Technický profil" data-en="Technical profile">Technický profil</span>
+          <h3 data-cz="Lokální a transparentní architektura" data-en="Local and transparent architecture">Lokální a transparentní architektura</h3>
+          <div class="code-line"><span data-cz="Platforma" data-en="Platform">Platforma</span><strong>Windows · C++20 · CMake</strong></div>
+          <div class="code-line"><span data-cz="Proces" data-en="Process">Proces</span><strong>RemindNeuralForecaster.exe</strong></div>
+          <div class="code-line"><span data-cz="Server" data-en="Server">Server</span><strong>127.0.0.1:7470</strong></div>
+          <div class="code-line"><span data-cz="GPU" data-en="GPU">GPU</span><strong>CUDA Runtime · cuBLAS · cuRAND</strong></div>
+          <div class="code-line"><span data-cz="Neuronové vrstvy" data-en="Neural layers">Neuronové vrstvy</span><strong>LSTM · GRU · RNN · FP32</strong></div>
+          <div class="code-line"><span data-cz="Fallback" data-en="Fallback">Fallback</span><strong>no-CUDA build</strong></div>
+          <div class="code-line"><span data-cz="ML frameworky" data-en="ML frameworks">ML frameworky</span><strong data-cz="žádné externí" data-en="none external">žádné externí</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="screenshots">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="kicker" data-cz="Skutečné UI" data-en="Actual UI">Skutečné UI</span>
+          <h2 data-cz="Verze 0.8.2 v provozu" data-en="Version 0.8.2 in operation">Verze 0.8.2 v provozu</h2>
+          <p data-cz="Snímky pocházejí z Release sestavy nad izolovanými syntetickými demonstračními daty. Kliknutím je zvětšíte." data-en="Screenshots come from a Release build using isolated synthetic demonstration data. Select one to enlarge it.">Snímky pocházejí z Release sestavy nad izolovanými syntetickými demonstračními daty. Kliknutím je zvětšíte.</p>
+        </div>
+        <div class="gallery">
+          <button class="shot" type="button" data-image="screenshots/02-experiment-catalog.png" data-title-cz="Katalog experimentů" data-title-en="Experiment catalog"><img loading="lazy" src="screenshots/02-experiment-catalog.png" alt="Experiment catalog"><span class="shot-label"><strong data-cz="Katalog experimentů" data-en="Experiment catalog">Katalog experimentů</strong><span>02</span></span></button>
+          <button class="shot" type="button" data-image="screenshots/03-experiment-detail.png" data-title-cz="Detail experimentu" data-title-en="Experiment detail"><img loading="lazy" src="screenshots/03-experiment-detail.png" alt="Experiment detail"><span class="shot-label"><strong data-cz="Detail experimentu" data-en="Experiment detail">Detail experimentu</strong><span>03</span></span></button>
+          <button class="shot" type="button" data-image="screenshots/04-display-names.png" data-title-cz="Čitelné názvy" data-title-en="Human-readable names"><img loading="lazy" src="screenshots/04-display-names.png" alt="Human-readable display names"><span class="shot-label"><strong data-cz="Čitelné názvy" data-en="Human-readable names">Čitelné názvy</strong><span>04</span></span></button>
+          <button class="shot" type="button" data-image="screenshots/05-snapshots.png" data-title-cz="Dataset snapshoty" data-title-en="Dataset snapshots"><img loading="lazy" src="screenshots/05-snapshots.png" alt="Dataset snapshots"><span class="shot-label"><strong data-cz="Dataset snapshoty" data-en="Dataset snapshots">Dataset snapshoty</strong><span>05</span></span></button>
+          <button class="shot" type="button" data-image="screenshots/06-model-catalog.png" data-title-cz="Model Registry" data-title-en="Model Registry"><img loading="lazy" src="screenshots/06-model-catalog.png" alt="Model Registry"><span class="shot-label"><strong>Model Registry</strong><span>06</span></span></button>
+          <button class="shot" type="button" data-image="screenshots/07-trash.png" data-title-cz="Bezpečný koš" data-title-en="Safe trash"><img loading="lazy" src="screenshots/07-trash.png" alt="Safe trash catalog"><span class="shot-label"><strong data-cz="Bezpečný koš" data-en="Safe trash">Bezpečný koš</strong><span>07</span></span></button>
+          <button class="shot" type="button" data-image="screenshots/08-trash-restore.png" data-title-cz="Obnovení snapshotu" data-title-en="Snapshot restored"><img loading="lazy" src="screenshots/08-trash-restore.png" alt="Restored snapshot"><span class="shot-label"><strong data-cz="Obnovení snapshotu" data-en="Snapshot restored">Obnovení snapshotu</strong><span>08</span></span></button>
+          <button class="shot" type="button" data-image="screenshots/09-system-health.png" data-title-cz="Systém a CUDA" data-title-en="System and CUDA"><img loading="lazy" src="screenshots/09-system-health.png" alt="System and CUDA health"><span class="shot-label"><strong data-cz="Systém a CUDA" data-en="System and CUDA">Systém a CUDA</strong><span>09</span></span></button>
+          <button class="shot" type="button" data-image="screenshots/10-research-evaluation.png" data-title-cz="Out-of-sample evaluace" data-title-en="Out-of-sample evaluation"><img loading="lazy" src="screenshots/10-research-evaluation.png" alt="Out-of-sample evaluation"><span class="shot-label"><strong data-cz="Out-of-sample evaluace" data-en="Out-of-sample evaluation">Out-of-sample evaluace</strong><span>10</span></span></button>
+          <button class="shot" type="button" data-image="screenshots/11-live-forecast.png" data-title-cz="Živý forecast" data-title-en="Live forecast"><img loading="lazy" src="screenshots/11-live-forecast.png" alt="Live forecast"><span class="shot-label"><strong data-cz="Živý forecast" data-en="Live forecast">Živý forecast</strong><span>11</span></span></button>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap status">
+        <div>
+          <span class="kicker" data-cz="Aktuální rozsah" data-en="Current scope">Aktuální rozsah</span>
+          <h2 data-cz="Výzkumný nástroj, ne automatický obchodní systém" data-en="A research tool, not an automated trading system">Výzkumný nástroj, ne automatický obchodní systém</h2>
+          <p data-cz="Verze 0.8.2 pokrývá lokální datový tok, snapshoty, experimenty, OOS evaluaci, registr modelů, živou inferenci a vizualizaci forecastu v MT5. Model se nikdy neaktivuje automaticky a aplikace nevytváří obchodní příkazy." data-en="Version 0.8.2 covers the local data flow, snapshots, experiments, OOS evaluation, the model registry, live inference, and MT5 forecast visualization. A model is never activated automatically, and the application does not place trades.">Verze 0.8.2 pokrývá lokální datový tok, snapshoty, experimenty, OOS evaluaci, registr modelů, živou inferenci a vizualizaci forecastu v MT5. Model se nikdy neaktivuje automaticky a aplikace nevytváří obchodní příkazy.</p>
+        </div>
+        <aside class="status-note">
+          <strong data-cz="Důležité upozornění" data-en="Important notice">Důležité upozornění</strong>
+          <p data-cz="Jde o experimentální software pro výzkum časových řad. Forecast ani historické metriky nejsou investičním doporučením a negarantují budoucí výsledek." data-en="This is experimental time-series research software. Forecasts and historical metrics are not investment advice and do not guarantee future results.">Jde o experimentální software pro výzkum časových řad. Forecast ani historické metriky nejsou investičním doporučením a negarantují budoucí výsledek.</p>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-row">
+      <span>Remind Neural Forecaster · v0.8.2</span>
+      <span data-cz="Lokální Windows aplikace · bez externího ML frameworku" data-en="Local Windows application · no external ML framework">Lokální Windows aplikace · bez externího ML frameworku</span>
+    </div>
+  </footer>
+
+  <dialog id="viewer" aria-labelledby="viewer-title">
+    <div class="dialog-bar">
+      <strong id="viewer-title">Screenshot</strong>
+      <button class="dialog-close" type="button" data-cz="Zavřít" data-en="Close">Zavřít</button>
+    </div>
+    <img id="viewer-image" alt="">
+  </dialog>
+
+  <script>
+    (() => {
+      const languageButtons = document.querySelectorAll('[data-lang]');
+      const translated = document.querySelectorAll('[data-cz][data-en]');
+      const dialog = document.querySelector('#viewer');
+      const dialogImage = document.querySelector('#viewer-image');
+      const dialogTitle = document.querySelector('#viewer-title');
+      let language = 'cs';
+
+      function setLanguage(nextLanguage) {
+        language = nextLanguage === 'en' ? 'en' : 'cs';
+        document.documentElement.lang = language;
+        translated.forEach((element) => {
+          const value = element.dataset[language];
+          if (value !== undefined) element.innerHTML = value;
+        });
+        languageButtons.forEach((button) => {
+          button.setAttribute('aria-pressed', String(button.dataset.lang === language));
+        });
+        document.title = language === 'cs'
+          ? 'Remind Neural Forecaster 0.8.2 — lokální CUDA forecasting'
+          : 'Remind Neural Forecaster 0.8.2 — local CUDA forecasting';
+      }
+
+      languageButtons.forEach((button) => {
+        button.addEventListener('click', () => setLanguage(button.dataset.lang));
+      });
+
+      document.querySelectorAll('.shot').forEach((button) => {
+        button.addEventListener('click', () => {
+          const title = language === 'cs' ? button.dataset.titleCz : button.dataset.titleEn;
+          dialogTitle.textContent = title;
+          dialogImage.src = button.dataset.image;
+          dialogImage.alt = title;
+          dialog.showModal();
+        });
+      });
+
+      document.querySelector('.dialog-close').addEventListener('click', () => dialog.close());
+      dialog.addEventListener('click', (event) => {
+        if (event.target === dialog) dialog.close();
+      });
+
+      setLanguage('cs');
+    })();
+  </script>
+</body>
+</html>

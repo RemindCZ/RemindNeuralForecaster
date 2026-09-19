@@ -1,0 +1,1686 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <meta name="description" content="REMIND Neural Forecaster for Windows – lokální C++/CUDA aplikace pro forexové obchodníky, kteří chtějí vyvíjet vlastní neuronové modely nad OHLCV daty, testovat predikční potenciál a vyhodnocovat výsledky profesionálními metrikami.">
+  <title>REMIND Neural Forecaster for Windows | Vlastní neuronové predikce pro Forex</title>
+
+  <style>
+    :root {
+      --bg: #060910;
+      --bg2: #0a1020;
+      --panel: rgba(15, 23, 42, 0.78);
+      --panel2: rgba(15, 23, 42, 0.52);
+      --line: rgba(148, 163, 184, 0.18);
+      --line2: rgba(56, 189, 248, 0.24);
+      --text: #e5edf8;
+      --muted: #92a4bb;
+      --soft: #cbd5e1;
+      --accent: #38bdf8;
+      --accent2: #22c55e;
+      --accent3: #a78bfa;
+      --warn: #fbbf24;
+      --danger: #fb7185;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+      --radius: 24px;
+      --radius2: 16px;
+      --max: 1180px;
+      --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 10% 0%, rgba(56, 189, 248, 0.18), transparent 32%),
+        radial-gradient(circle at 78% 12%, rgba(167, 139, 250, 0.16), transparent 28%),
+        radial-gradient(circle at 50% 72%, rgba(34, 197, 94, 0.08), transparent 38%),
+        linear-gradient(180deg, #05070d 0%, #08111f 42%, #05070d 100%);
+      color: var(--text);
+      font-family: var(--font);
+      line-height: 1.55;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(to bottom, black, transparent 72%);
+      opacity: 0.35;
+      z-index: -2;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    img, svg {
+      max-width: 100%;
+      display: block;
+    }
+
+    .container {
+      width: min(var(--max), calc(100vw - 36px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(18px);
+      background: rgba(5, 8, 15, 0.74);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .topbar-inner {
+      min-height: 78px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 235px;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 35% 25%, rgba(255,255,255,0.9), transparent 8%),
+        linear-gradient(135deg, rgba(56,189,248,0.95), rgba(167,139,250,0.9) 55%, rgba(34,197,94,0.82));
+      box-shadow: 0 12px 32px rgba(56, 189, 248, 0.28);
+      color: #020617;
+      font-weight: 900;
+      letter-spacing: -0.08em;
+    }
+
+    .brand strong {
+      display: block;
+      font-size: 15px;
+      letter-spacing: 0.1em;
+    }
+
+    .brand span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .nav a {
+      color: var(--muted);
+      font-size: 13px;
+      padding: 9px 11px;
+      border-radius: 999px;
+      transition: 0.2s ease;
+    }
+
+    .nav a:hover {
+      color: var(--text);
+      background: rgba(148, 163, 184, 0.09);
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      border: 1px solid rgba(148,163,184,0.26);
+      background: rgba(15, 23, 42, 0.76);
+      color: var(--text);
+      padding: 12px 17px;
+      border-radius: 999px;
+      font-weight: 750;
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(56, 189, 248, 0.55);
+      box-shadow: 0 14px 38px rgba(0, 0, 0, 0.28);
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, #38bdf8, #2563eb 52%, #7c3aed);
+      border-color: rgba(125, 211, 252, 0.55);
+      color: white;
+      box-shadow: 0 18px 48px rgba(37, 99, 235, 0.32);
+    }
+
+    .btn.green {
+      background: linear-gradient(135deg, #22c55e, #0891b2);
+      border-color: rgba(134, 239, 172, 0.42);
+      color: white;
+      box-shadow: 0 18px 48px rgba(34, 197, 94, 0.22);
+    }
+
+    .btn.ghost {
+      background: rgba(15, 23, 42, 0.38);
+    }
+
+    .hero {
+      padding: 74px 0 46px;
+      position: relative;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.07fr) minmax(360px, 0.93fr);
+      gap: 34px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      color: #a5f3fc;
+      font-size: 12px;
+      font-weight: 850;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      border-radius: 99px;
+      background: var(--accent2);
+      box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.12), 0 0 24px rgba(34, 197, 94, 0.55);
+    }
+
+    h1 {
+      font-size: clamp(42px, 6vw, 84px);
+      line-height: 0.94;
+      letter-spacing: -0.07em;
+      margin: 0;
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #f8fafc 8%, #7dd3fc 38%, #c4b5fd 72%, #86efac);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .hero-lead {
+      margin: 22px 0 0;
+      color: var(--soft);
+      font-size: clamp(17px, 2.1vw, 22px);
+      max-width: 760px;
+    }
+
+    .hero-lead strong {
+      color: white;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 30px;
+    }
+
+    .hero-note {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 16px;
+      max-width: 780px;
+    }
+
+    .hero-panel {
+      position: relative;
+      border: 1px solid rgba(125, 211, 252, 0.22);
+      background:
+        radial-gradient(circle at 20% 15%, rgba(56, 189, 248, 0.22), transparent 34%),
+        radial-gradient(circle at 80% 25%, rgba(167, 139, 250, 0.18), transparent 30%),
+        rgba(15, 23, 42, 0.62);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+      overflow: hidden;
+    }
+
+    .hero-panel::after {
+      content: "";
+      position: absolute;
+      inset: -2px;
+      background: linear-gradient(135deg, rgba(56,189,248,0.22), transparent 35%, rgba(34,197,94,0.16));
+      pointer-events: none;
+      mask-image: linear-gradient(black, transparent 72%);
+    }
+
+    .terminal {
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      background: rgba(2, 6, 23, 0.72);
+      border-radius: 18px;
+      overflow: hidden;
+      position: relative;
+      z-index: 1;
+    }
+
+    .terminal-top {
+      height: 42px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 0 14px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+      background: rgba(15, 23, 42, 0.65);
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: #64748b;
+    }
+
+    .dot.red { background: #fb7185; }
+    .dot.yellow { background: #fbbf24; }
+    .dot.green { background: #22c55e; }
+
+    .terminal-body {
+      padding: 18px;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      color: #bfdbfe;
+    }
+
+    .line {
+      display: flex;
+      gap: 10px;
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(148,163,184,0.06);
+    }
+
+    .line:last-child {
+      border-bottom: 0;
+    }
+
+    .prompt {
+      color: #22c55e;
+      flex: 0 0 auto;
+    }
+
+    .terminal strong {
+      color: #f8fafc;
+      font-weight: 800;
+    }
+
+    .ticker-card {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .mini-metric {
+      border: 1px solid rgba(148,163,184,0.16);
+      background: rgba(2, 6, 23, 0.52);
+      border-radius: 18px;
+      padding: 15px;
+    }
+
+    .mini-metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .mini-metric strong {
+      display: block;
+      font-size: 23px;
+      letter-spacing: -0.05em;
+    }
+
+    .mini-metric small {
+      display: block;
+      color: #86efac;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .section {
+      padding: 74px 0;
+    }
+
+    .section.tight {
+      padding: 46px 0;
+    }
+
+    .section-head {
+      max-width: 820px;
+      margin-bottom: 28px;
+    }
+
+    .section-head.center {
+      text-align: center;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: clamp(31px, 4.2vw, 56px);
+      letter-spacing: -0.055em;
+      line-height: 1.02;
+    }
+
+    .section-head p {
+      color: var(--muted);
+      font-size: 17px;
+      margin: 16px 0 0;
+    }
+
+    .grid {
+      display: grid;
+      gap: 18px;
+    }
+
+    .grid.cols-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .grid.cols-4 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .grid.cols-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(15,23,42,0.82), rgba(15,23,42,0.54)),
+        rgba(15, 23, 42, 0.55);
+      border-radius: var(--radius2);
+      padding: 22px;
+      box-shadow: 0 12px 42px rgba(0,0,0,0.18);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 20% 0%, rgba(56,189,248,0.08), transparent 36%);
+      pointer-events: none;
+    }
+
+    .card > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .card h3 {
+      margin: 0 0 10px;
+      font-size: 20px;
+      letter-spacing: -0.03em;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .icon {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border-radius: 15px;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      color: #7dd3fc;
+      margin-bottom: 14px;
+      font-size: 22px;
+    }
+
+    .icon.green {
+      background: rgba(34, 197, 94, 0.11);
+      border-color: rgba(34, 197, 94, 0.2);
+      color: #86efac;
+    }
+
+    .icon.purple {
+      background: rgba(167, 139, 250, 0.12);
+      border-color: rgba(167, 139, 250, 0.2);
+      color: #c4b5fd;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+      gap: 26px;
+      align-items: start;
+    }
+
+    .feature-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .feature-row {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 14px;
+      border: 1px solid rgba(148,163,184,0.14);
+      background: rgba(2, 6, 23, 0.34);
+      border-radius: 16px;
+    }
+
+    .check {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: rgba(34, 197, 94, 0.13);
+      color: #86efac;
+      font-weight: 900;
+    }
+
+    .feature-row strong {
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    .feature-row span {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .showcase {
+      border: 1px solid rgba(56, 189, 248, 0.22);
+      background:
+        radial-gradient(circle at 80% 20%, rgba(56, 189, 248, 0.15), transparent 30%),
+        linear-gradient(180deg, rgba(15,23,42,0.84), rgba(2,6,23,0.72));
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .dashboard-window {
+      border-radius: 20px;
+      border: 1px solid rgba(148,163,184,0.18);
+      overflow: hidden;
+      background: #020617;
+    }
+
+    .window-bar {
+      height: 46px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      border-bottom: 1px solid rgba(148,163,184,0.14);
+      background: rgba(15,23,42,0.8);
+    }
+
+    .window-title {
+      color: var(--muted);
+      font-size: 12px;
+      font-family: var(--mono);
+    }
+
+    .mock-dashboard {
+      padding: 18px;
+    }
+
+    .mock-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .mock-stat {
+      border: 1px solid rgba(148,163,184,0.14);
+      background: rgba(15,23,42,0.62);
+      padding: 12px;
+      border-radius: 14px;
+    }
+
+    .mock-stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      margin-bottom: 5px;
+    }
+
+    .mock-stat strong {
+      display: block;
+      font-size: 16px;
+    }
+
+    .chart {
+      height: 240px;
+      border: 1px solid rgba(148,163,184,0.14);
+      border-radius: 16px;
+      background:
+        linear-gradient(rgba(148,163,184,0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148,163,184,0.08) 1px, transparent 1px),
+        radial-gradient(circle at 20% 60%, rgba(56,189,248,0.16), transparent 25%),
+        radial-gradient(circle at 82% 36%, rgba(34,197,94,0.12), transparent 23%),
+        rgba(2,6,23,0.6);
+      background-size: 100% 40px, 60px 100%, auto, auto, auto;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chart svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 99px;
+      background: var(--accent);
+    }
+
+    .swatch.green {
+      background: var(--accent2);
+    }
+
+    .swatch.purple {
+      background: var(--accent3);
+    }
+
+    .swatch.warn {
+      background: var(--warn);
+    }
+
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+    }
+
+    .step {
+      border: 1px solid rgba(148,163,184,0.16);
+      background: rgba(15,23,42,0.58);
+      border-radius: 18px;
+      padding: 18px;
+      position: relative;
+      min-height: 170px;
+    }
+
+    .step b {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(56,189,248,0.28), rgba(167,139,250,0.24));
+      color: #e0f2fe;
+      margin-bottom: 12px;
+    }
+
+    .step h3 {
+      font-size: 17px;
+      margin: 0 0 8px;
+    }
+
+    .step p {
+      color: var(--muted);
+      font-size: 14px;
+      margin: 0;
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 22px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid rgba(148,163,184,0.18);
+      background: rgba(15,23,42,0.48);
+      padding: 9px 12px;
+      border-radius: 999px;
+      color: var(--soft);
+      font-size: 13px;
+    }
+
+    .badge::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #38bdf8;
+      box-shadow: 0 0 18px rgba(56,189,248,0.5);
+    }
+
+    .quote {
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      background:
+        radial-gradient(circle at 15% 0%, rgba(56,189,248,0.18), transparent 32%),
+        rgba(15,23,42,0.6);
+      border-radius: var(--radius);
+      padding: 32px;
+      box-shadow: var(--shadow);
+    }
+
+    .quote p {
+      font-size: clamp(22px, 3vw, 34px);
+      line-height: 1.15;
+      letter-spacing: -0.045em;
+      margin: 0;
+      color: #f8fafc;
+    }
+
+    .quote footer {
+      margin-top: 18px;
+      color: var(--muted);
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid rgba(148,163,184,0.14);
+      border-radius: 18px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 720px;
+      background: rgba(2, 6, 23, 0.38);
+    }
+
+    th, td {
+      text-align: left;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(148,163,184,0.11);
+      font-size: 14px;
+    }
+
+    th {
+      color: #bfdbfe;
+      background: rgba(15,23,42,0.76);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+    }
+
+    td {
+      color: var(--soft);
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .positive {
+      color: #86efac;
+      font-weight: 800;
+    }
+
+    .blue {
+      color: #7dd3fc;
+      font-weight: 800;
+    }
+
+    .purple {
+      color: #c4b5fd;
+      font-weight: 800;
+    }
+
+    .warning-box {
+      border: 1px solid rgba(251, 191, 36, 0.28);
+      background: rgba(251, 191, 36, 0.08);
+      color: #fde68a;
+      border-radius: 18px;
+      padding: 18px;
+      font-size: 14px;
+    }
+
+    .cta {
+      border: 1px solid rgba(125, 211, 252, 0.28);
+      background:
+        radial-gradient(circle at 18% 30%, rgba(56, 189, 248, 0.25), transparent 28%),
+        radial-gradient(circle at 88% 20%, rgba(34, 197, 94, 0.15), transparent 30%),
+        linear-gradient(135deg, rgba(15,23,42,0.9), rgba(2,6,23,0.78));
+      border-radius: 32px;
+      padding: clamp(28px, 5vw, 58px);
+      box-shadow: var(--shadow);
+      text-align: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .cta h2 {
+      max-width: 850px;
+      margin: 0 auto;
+    }
+
+    .cta p {
+      max-width: 770px;
+      color: var(--soft);
+      margin: 18px auto 0;
+      font-size: 18px;
+    }
+
+    .cta-actions {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .faq {
+      display: grid;
+      gap: 12px;
+    }
+
+    .faq-item {
+      border: 1px solid rgba(148,163,184,0.16);
+      background: rgba(15,23,42,0.52);
+      border-radius: 18px;
+      overflow: hidden;
+    }
+
+    .faq-button {
+      width: 100%;
+      background: transparent;
+      border: 0;
+      color: var(--text);
+      padding: 18px;
+      text-align: left;
+      font: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    .faq-button span:last-child {
+      color: var(--accent);
+      font-size: 22px;
+    }
+
+    .faq-content {
+      display: none;
+      padding: 0 18px 18px;
+      color: var(--muted);
+    }
+
+    .faq-item.open .faq-content {
+      display: block;
+    }
+
+    .footer {
+      padding: 34px 0 48px;
+      border-top: 1px solid rgba(148,163,184,0.14);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .footer strong {
+      color: var(--text);
+    }
+
+    .mobile-menu {
+      display: none;
+    }
+
+    @media (max-width: 980px) {
+      .topbar-inner {
+        min-height: auto;
+        padding: 14px 0;
+      }
+
+      .nav, .top-actions {
+        display: none;
+      }
+
+      .mobile-menu {
+        display: inline-flex;
+      }
+
+      .hero-grid,
+      .split,
+      .grid.cols-2 {
+        grid-template-columns: 1fr;
+      }
+
+      .grid.cols-3,
+      .grid.cols-4,
+      .pipeline {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .hero {
+        padding-top: 52px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .container {
+        width: min(var(--max), calc(100vw - 24px));
+      }
+
+      .grid.cols-3,
+      .grid.cols-4,
+      .pipeline,
+      .ticker-card,
+      .mock-stats {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-actions,
+      .cta-actions {
+        align-items: stretch;
+      }
+
+      .btn {
+        width: 100%;
+      }
+
+      .brand span {
+        display: none;
+      }
+
+      .section {
+        padding: 54px 0;
+      }
+
+      h1 {
+        font-size: 43px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a class="brand" href="#top" aria-label="REMIND Neural Forecaster">
+        <div class="brand-mark">Σ</div>
+        <div>
+          <strong>REMIND.CZ</strong>
+          <span>Neural Forecaster for Windows</span>
+        </div>
+      </a>
+
+      <nav class="nav" aria-label="Hlavní navigace">
+        <a href="#proc">Proč</a>
+        <a href="#produkt">Produkt</a>
+        <a href="#workflow">Workflow</a>
+        <a href="#metriky">Metriky</a>
+        <a href="#technologie">Technologie</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+
+      <div class="top-actions">
+        <a class="btn ghost" href="#demo">Ukázka</a>
+        <a class="btn primary" href="#cta">Chci testovat</a>
+      </div>
+
+      <button class="btn ghost mobile-menu" type="button" onclick="document.getElementById('mobileLinks').toggleAttribute('hidden')">
+        Menu
+      </button>
+    </div>
+
+    <div id="mobileLinks" hidden class="container" style="padding:0 0 14px">
+      <div class="badge-row">
+        <a class="badge" href="#proc">Proč</a>
+        <a class="badge" href="#produkt">Produkt</a>
+        <a class="badge" href="#workflow">Workflow</a>
+        <a class="badge" href="#metriky">Metriky</a>
+        <a class="badge" href="#technologie">Technologie</a>
+        <a class="badge" href="#faq">FAQ</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <div class="eyebrow">Nová generace lokálního kvantitativního výzkumu</div>
+          <h1>
+            Vyvíjejte vlastní
+            <span class="gradient-text">neuronové forecasty</span>
+            pro Forex.
+          </h1>
+
+          <p class="hero-lead">
+            <strong>REMIND Neural Forecaster for Windows</strong> je samostatná desktopová laboratoř pro obchodníky,
+            kteří nechtějí slepě následovat cizí signály — chtějí analyzovat vlastní data, trénovat vlastní
+            modely a vyhodnocovat jejich predikční potenciál profesionálním způsobem.
+          </p>
+
+          <div class="hero-actions">
+            <a class="btn primary" href="#cta">Získat přístup k produktu</a>
+            <a class="btn green" href="#workflow">Jak to funguje</a>
+            <a class="btn ghost" href="#metriky">Podívat se na metriky</a>
+          </div>
+
+          <p class="hero-note">
+            Navrženo pro forexové obchodníky, systematické tradery, analytiky a vývojáře strategií, kteří chtějí
+            propojit tržní intuici s vlastním neuronovým výzkumem — bez cloudu, bez odesílání dat, bez uzamčení do cizí platformy.
+          </p>
+
+          <div class="badge-row" aria-label="Hlavní vlastnosti">
+            <span class="badge">Lokální Windows aplikace</span>
+            <span class="badge">C++20 / CUDA engine</span>
+            <span class="badge">LSTM · GRU · RNN</span>
+            <span class="badge">Multi-horizon High/Low forecast</span>
+            <span class="badge">Out-of-sample metriky</span>
+          </div>
+        </div>
+
+        <aside class="hero-panel" id="demo" aria-label="Produktová ukázka">
+          <div class="terminal">
+            <div class="terminal-top">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+              <span class="window-title">RemindNeuralForecaster.exe</span>
+            </div>
+            <div class="terminal-body">
+              <div class="line"><span class="prompt">●</span><span>HTTP server bound to <strong>127.0.0.1:7470</strong></span></div>
+              <div class="line"><span class="prompt">●</span><span>CUDA worker initialized · <strong>NVIDIA device detected</strong></span></div>
+              <div class="line"><span class="prompt">●</span><span>Engine smoke checks · forward / BPTT / AdamW</span></div>
+              <div class="line"><span class="prompt">●</span><span>WebSocket telemetry · <strong>live training events</strong></span></div>
+              <div class="line"><span class="prompt">●</span><span>Model format v1 · transactional save · checksum verified</span></div>
+              <div class="line"><span class="prompt">●</span><span>Status: <strong>Ready for research session</strong></span></div>
+            </div>
+          </div>
+
+          <div class="ticker-card">
+            <div class="mini-metric">
+              <span>Forecast režim</span>
+              <strong>T+1…T+N</strong>
+              <small>High/Low trajektorie</small>
+            </div>
+            <div class="mini-metric">
+              <span>Trénink</span>
+              <strong>GPU</strong>
+              <small>CUDA worker</small>
+            </div>
+            <div class="mini-metric">
+              <span>Validace</span>
+              <strong>OOS</strong>
+              <small>chronologický test</small>
+            </div>
+            <div class="mini-metric">
+              <span>Baseline</span>
+              <strong>Skill</strong>
+              <small>vs persistence</small>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section tight">
+      <div class="container">
+        <div class="quote">
+          <p>
+            Nehledejte magické tlačítko. Vybudujte si vlastní výzkumnou dílnu, kde každá predikce, každý model
+            a každé rozhodnutí projde měřitelným testem.
+          </p>
+          <footer>
+            REMIND Neural Forecaster je navržen jako nástroj pro seriózní experimenty — ne jako černá skříňka slibující jistotu.
+          </footer>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="proc">
+      <div class="container">
+        <div class="section-head center">
+          <div class="eyebrow">Pro tradery, kteří chtějí víc než indikátor</div>
+          <h2>Forex se mění. Vaše analytické nástroje musí také.</h2>
+          <p>
+            Klasické indikátory ukazují minulost. Hotové signály vám berou kontrolu. Univerzální AI nástroje často
+            neumí pracovat s realitou finančních časových řad. REMIND Neural Forecaster vám dává něco cennějšího:
+            prostředí, ve kterém můžete tvořit, testovat a zlepšovat vlastní modely.
+          </p>
+        </div>
+
+        <div class="grid cols-3">
+          <article class="card">
+            <div class="icon">⌁</div>
+            <h3>Vlastní hypotézy místo cizích signálů</h3>
+            <p>
+              Importujte OHLCV data, zvolte horizont, nastavte architekturu a sledujte, zda má model skutečný
+              predikční potenciál. Nástroj vám nediktuje strategii — dává vám prostředí pro její výzkum.
+            </p>
+          </article>
+
+          <article class="card">
+            <div class="icon green">↗</div>
+            <h3>Multi-horizon High/Low trajektorie</h3>
+            <p>
+              Nejde jen o jeden bod dopředu. Model může odhadovat budoucí High/Low pásmo pro každý krok T+1 až T+N,
+              takže vidíte celou očekávanou trajektorii, ne izolovanou hodnotu.
+            </p>
+          </article>
+
+          <article class="card">
+            <div class="icon purple">◈</div>
+            <h3>Výsledky, které musí obstát mimo trénink</h3>
+            <p>
+              Out-of-sample MAE, RMSE, directional accuracy, range overlap a skill vs persistence pomáhají odlišit
+              zajímavý model od pouhého přeučení na historická data.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="produkt">
+      <div class="container split">
+        <div>
+          <div class="section-head">
+            <div class="eyebrow">Produkt</div>
+            <h2>Desktopová neuronová laboratoř postavená pro výkon, soukromí a kontrolu.</h2>
+            <p>
+              REMIND Neural Forecaster for Windows spojuje nativní C++/CUDA engine, lokální webové rozhraní,
+              tréninkovou telemetrii a profesionální reporting do jednoho samostatného pracovního prostředí.
+            </p>
+          </div>
+
+          <div class="feature-list">
+            <div class="feature-row">
+              <div class="check">✓</div>
+              <div>
+                <strong>Váš počítač. Vaše data. Vaše modely.</strong>
+                <span>
+                  Aplikace běží lokálně a obsluhuje rozhraní přes loopback server na 127.0.0.1. Tržní data
+                  nemusí opouštět váš počítač.
+                </span>
+              </div>
+            </div>
+
+            <div class="feature-row">
+              <div class="check">✓</div>
+              <div>
+                <strong>Nativní CUDA výpočty</strong>
+                <span>
+                  Trénink a inference jsou navrženy pro GPU pracovní režim s CUDA workerem, cuBLAS/cuRAND infrastrukturou
+                  a bounded telemetrií.
+                </span>
+              </div>
+            </div>
+
+            <div class="feature-row">
+              <div class="check">✓</div>
+              <div>
+                <strong>LSTM, GRU i RNN modely</strong>
+                <span>
+                  Experimentujte s rekurentními architekturami pro finanční časové řady a porovnávejte jejich chování
+                  v jednotném workflow.
+                </span>
+              </div>
+            </div>
+
+            <div class="feature-row">
+              <div class="check">✓</div>
+              <div>
+                <strong>Modelový formát s kontrolou integrity</strong>
+                <span>
+                  Ukládání modelů je navrženo jako checksummed, bounded a transactional, aby se s výzkumnými artefakty
+                  dalo pracovat bezpečněji a opakovatelněji.
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="showcase">
+          <div class="dashboard-window">
+            <div class="window-bar">
+              <div style="display:flex;gap:7px">
+                <span class="dot red"></span>
+                <span class="dot yellow"></span>
+                <span class="dot green"></span>
+              </div>
+              <span class="window-title">Local session · 127.0.0.1:7470</span>
+            </div>
+
+            <div class="mock-dashboard">
+              <div class="mock-stats">
+                <div class="mock-stat">
+                  <span>NVIDIA</span>
+                  <strong>CUDA OK</strong>
+                </div>
+                <div class="mock-stat">
+                  <span>Model</span>
+                  <strong>LSTM</strong>
+                </div>
+                <div class="mock-stat">
+                  <span>Horizon</span>
+                  <strong>T+20</strong>
+                </div>
+                <div class="mock-stat">
+                  <span>OOS Skill</span>
+                  <strong class="positive">měřeno</strong>
+                </div>
+              </div>
+
+              <div class="chart" aria-label="Ilustrativní graf forecastu">
+                <svg viewBox="0 0 800 240" preserveAspectRatio="none" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="lineA" x1="0" x2="1">
+                      <stop offset="0" stop-color="#38bdf8"/>
+                      <stop offset="1" stop-color="#22c55e"/>
+                    </linearGradient>
+                    <linearGradient id="areaA" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0" stop-color="#38bdf8" stop-opacity="0.28"/>
+                      <stop offset="1" stop-color="#38bdf8" stop-opacity="0"/>
+                    </linearGradient>
+                    <linearGradient id="areaB" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0" stop-color="#22c55e" stop-opacity="0.2"/>
+                      <stop offset="1" stop-color="#22c55e" stop-opacity="0"/>
+                    </linearGradient>
+                  </defs>
+
+                  <path d="M0,160 C60,145 90,170 140,130 C190,88 250,125 300,100 C365,65 410,105 468,82"
+                        fill="none" stroke="url(#lineA)" stroke-width="4"/>
+                  <line x1="485" y1="28" x2="485" y2="220" stroke="#fbbf24" stroke-width="2" stroke-dasharray="7 7"/>
+                  <text x="496" y="42" fill="#fbbf24" font-size="16" font-family="monospace">NOW</text>
+
+                  <path d="M485,88 C540,70 585,58 630,66 C690,76 735,54 800,44 L800,114 C735,124 690,142 630,130 C585,122 540,135 485,112 Z"
+                        fill="url(#areaA)"/>
+                  <path d="M485,112 C540,135 585,122 630,130 C690,142 735,124 800,114"
+                        fill="none" stroke="#38bdf8" stroke-width="3"/>
+
+                  <path d="M485,150 C540,165 588,175 635,160 C690,145 734,168 800,156 L800,210 L485,210 Z"
+                        fill="url(#areaB)"/>
+                  <path d="M485,150 C540,165 588,175 635,160 C690,145 734,168 800,156"
+                        fill="none" stroke="#22c55e" stroke-width="3"/>
+
+                  <path d="M485,130 C540,140 585,145 632,136 C690,128 735,136 800,125"
+                        fill="none" stroke="#c4b5fd" stroke-width="2" stroke-dasharray="8 6"/>
+                </svg>
+              </div>
+
+              <div class="legend">
+                <span><i class="swatch"></i>historický Close</span>
+                <span><i class="swatch green"></i>forecast Low</span>
+                <span><i class="swatch"></i>forecast High</span>
+                <span><i class="swatch purple"></i>midpoint</span>
+                <span><i class="swatch warn"></i>NOW</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="workflow">
+      <div class="container">
+        <div class="section-head center">
+          <div class="eyebrow">Výzkumný workflow</div>
+          <h2>Od dat k vlastnímu neuronovému modelu v pěti krocích.</h2>
+          <p>
+            Cílem není kliknout na tlačítko a věřit. Cílem je rychle procházet cyklus: data → model → trénink →
+            test → rozhodnutí, zda daná hypotéza stojí za další práci.
+          </p>
+        </div>
+
+        <div class="pipeline">
+          <div class="step">
+            <b>1</b>
+            <h3>Importujte data</h3>
+            <p>
+              Připravte OHLCV data z vlastního zdroje. Aplikace je navržena tak, aby pracovala s finanční časovou řadou
+              jako s chronologickým experimentem.
+            </p>
+          </div>
+
+          <div class="step">
+            <b>2</b>
+            <h3>Zvolte experiment</h3>
+            <p>
+              Nastavte vstupní okno, horizont, architekturu, velikost vrstev, dropout, learning rate a další parametry modelu.
+            </p>
+          </div>
+
+          <div class="step">
+            <b>3</b>
+            <h3>Trénujte na GPU</h3>
+            <p>
+              Dedicated CUDA worker trénuje model a posílá do UI kompaktní telemetrii: loss, průběh, rychlost, stav i odhad paměti.
+            </p>
+          </div>
+
+          <div class="step">
+            <b>4</b>
+            <h3>Testujte mimo trénink</h3>
+            <p>
+              Vyhodnocení probíhá na oddělené out-of-sample části, aby bylo možné odhalit rozdíl mezi učením a přeučením.
+            </p>
+          </div>
+
+          <div class="step">
+            <b>5</b>
+            <h3>Iterujte s kontrolou</h3>
+            <p>
+              Ukládejte modely, porovnávejte metriky, sledujte horizon-wise výkon a budujte si vlastní knihovnu ověřených experimentů.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="metriky">
+      <div class="container split">
+        <div>
+          <div class="section-head">
+            <div class="eyebrow">Metriky, které odhalují realitu</div>
+            <h2>Model musí porazit víc než pocit.</h2>
+            <p>
+              Dobrý graf nestačí. REMIND Neural Forecaster je navržen tak, aby vám pomohl měřit, zda model přidává hodnotu
+              proti jednoduchým baseline přístupům — a zda jeho výkon drží napříč predikčním horizontem.
+            </p>
+          </div>
+
+          <div class="warning-box">
+            <strong>Důležité:</strong> Pozitivní historický výsledek není zárukou budoucího vývoje trhu.
+            Účelem nástroje je výzkum a analytická kontrola modelu, nikoli slib zisku.
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table aria-label="Přehled metrik">
+            <thead>
+              <tr>
+                <th>Metrika</th>
+                <th>Co ukazuje</th>
+                <th>Proč je důležitá</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="blue">MAE</td>
+                <td>Průměrnou absolutní chybu High/Low forecastu</td>
+                <td>Jednoduchý a čitelný odhad typické chyby v cenových jednotkách</td>
+              </tr>
+              <tr>
+                <td class="blue">RMSE</td>
+                <td>Chybu citlivější na extrémní odchylky</td>
+                <td>Pomáhá odhalit modely, které občas selhávají výrazněji</td>
+              </tr>
+              <tr>
+                <td class="positive">Directional Accuracy</td>
+                <td>Shodu směru predikovaného midpointu</td>
+                <td>Ukazuje, zda model zachycuje směr, nejen velikost chyby</td>
+              </tr>
+              <tr>
+                <td class="purple">Range Overlap</td>
+                <td>Průnik predikovaného a reálného High/Low pásma</td>
+                <td>Vhodné pro hodnocení pásmové predikce místo jediného bodu</td>
+              </tr>
+              <tr>
+                <td class="positive">Skill vs Persistence</td>
+                <td>Porovnání proti naivní baseline</td>
+                <td>Klíčová otázka: přidává model něco navíc proti jednoduché predikci?</td>
+              </tr>
+              <tr>
+                <td class="purple">Horizon-wise report</td>
+                <td>Výkon pro T+1, T+2 … T+N samostatně</td>
+                <td>Odhalí, kde model funguje a kde se predikční síla vytrácí</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="technologie">
+      <div class="container">
+        <div class="section-head center">
+          <div class="eyebrow">Technologická architektura</div>
+          <h2>Výkon nativní aplikace. Pohodlí moderního rozhraní.</h2>
+          <p>
+            Forecaster kombinuje desktopový výkon s webovým UI — aplikace spustí lokální server, otevře prohlížeč
+            a oddělí uživatelské rozhraní od výpočetního CUDA workeru.
+          </p>
+        </div>
+
+        <div class="grid cols-3">
+          <article class="card">
+            <div class="icon">▣</div>
+            <h3>Jedno Windows EXE</h3>
+            <p>
+              Samostatná aplikace pro lokální běh. Žádný MetaTrader runtime, žádný WordPress plugin, žádná browserová
+              ML vrstva jako hlavní engine.
+            </p>
+          </article>
+
+          <article class="card">
+            <div class="icon green">⚙</div>
+            <h3>C++20 / CUDA engine</h3>
+            <p>
+              Framework-independent engine s RAII vlastnictvím CUDA kontextu, streamu, cuBLAS handle a cuRAND generátoru.
+            </p>
+          </article>
+
+          <article class="card">
+            <div class="icon purple">⇄</div>
+            <h3>HTTP + WebSocket</h3>
+            <p>
+              Lokální loopback server obsluhuje embedded UI, health API, capabilities endpoint a živou tréninkovou telemetrii.
+            </p>
+          </article>
+
+          <article class="card">
+            <div class="icon">∑</div>
+            <h3>CPU reference</h3>
+            <p>
+              Nezávislá CPU numerická reference pomáhá ověřovat korektnost multi-timestep a multi-layer BPTT.
+            </p>
+          </article>
+
+          <article class="card">
+            <div class="icon green">⏱</div>
+            <h3>Cancellable training worker</h3>
+            <p>
+              Asynchronní tréninkový worker s možností zastavení, bounded telemetrií a kontrolou odhadu VRAM před spuštěním.
+            </p>
+          </article>
+
+          <article class="card">
+            <div class="icon purple">◇</div>
+            <h3>Model persistence</h3>
+            <p>
+              Checksummed model format v1, navržený pro bezpečnější ukládání a načítání výzkumných modelů.
+            </p>
+          </article>
+        </div>
+
+        <div class="badge-row" style="justify-content:center;margin-top:26px">
+          <span class="badge">CUDA device detection</span>
+          <span class="badge">AdamW optimizer</span>
+          <span class="badge">Gradient clipping</span>
+          <span class="badge">Dropout</span>
+          <span class="badge">GPU-resident state</span>
+          <span class="badge">Structured telemetry</span>
+          <span class="badge">Session security</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container split">
+        <div class="card">
+          <div class="icon green">★</div>
+          <h3>Pro koho je Forecaster ideální?</h3>
+          <div class="feature-list">
+            <div class="feature-row">
+              <div class="check">✓</div>
+              <div>
+                <strong>Forexový obchodník s vlastním pohledem na trh</strong>
+                <span>Chcete testovat, zda se vaše tržní hypotézy dají převést do měřitelného modelu.</span>
+              </div>
+            </div>
+            <div class="feature-row">
+              <div class="check">✓</div>
+              <div>
+                <strong>Systematický trader</strong>
+                <span>Nechcete ručně věřit signálům. Chcete srovnávat modely, baseline, test segmenty a metriky.</span>
+              </div>
+            </div>
+            <div class="feature-row">
+              <div class="check">✓</div>
+              <div>
+                <strong>Vývojář strategií</strong>
+                <span>Hledáte lokální engine a workflow pro experimenty s rekurentními sítěmi nad časovými řadami.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="icon">✕</div>
+          <h3>Pro koho produkt není?</h3>
+          <div class="feature-list">
+            <div class="feature-row">
+              <div class="check" style="background:rgba(251,113,133,0.13);color:#fda4af">!</div>
+              <div>
+                <strong>Pro hledání garantovaného zisku</strong>
+                <span>Žádný model neumí odstranit tržní riziko. Forecaster je výzkumný nástroj, ne záruka výsledku.</span>
+              </div>
+            </div>
+            <div class="feature-row">
+              <div class="check" style="background:rgba(251,113,133,0.13);color:#fda4af">!</div>
+              <div>
+                <strong>Pro pasivní kopírování signálů</strong>
+                <span>Hlavní hodnota je v možnosti tvořit a ověřovat vlastní modely, nikoli pasivně přijímat rozhodnutí.</span>
+              </div>
+            </div>
+            <div class="feature-row">
+              <div class="check" style="background:rgba(251,113,133,0.13);color:#fda4af">!</div>
+              <div>
+                <strong>Pro obchodování bez řízení rizika</strong>
+                <span>Predikce může být součástí analytiky. Risk management, velikost pozice a exekuce zůstávají samostatnou disciplínou.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <section class="section" id="faq">
+      <div class="container">
+        <div class="section-head center">
+          <div class="eyebrow">FAQ</div>
+          <h2>Časté otázky před prvním experimentem.</h2>
+        </div>
+
+        <div class="faq">
+          <div class="faq-item open">
+            <button class="faq-button" type="button">
+              <span>Je REMIND Neural Forecaster obchodní robot?</span>
+              <span>+</span>
+            </button>
+            <div class="faq-content">
+              Ne. Je to výzkumné prostředí pro tvorbu a vyhodnocování neuronových forecastů. Pomáhá analyzovat
+              predikční potenciál modelů, ale samo o sobě nenahrazuje obchodní plán, risk management ani rozhodování tradera.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-button" type="button">
+              <span>Musím umět programovat?</span>
+              <span>+</span>
+            </button>
+            <div class="faq-content">
+              Základní používání je navrženo přes grafické rozhraní. Technicky pokročilejší uživatelé však ocení,
+              že produkt pracuje s jasnou strukturou modelu, metrikami, konfigurací a exportovatelnými artefakty.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-button" type="button">
+              <span>Proč lokální Windows aplikace místo cloudu?</span>
+              <span>+</span>
+            </button>
+            <div class="faq-content">
+              Lokální běh dává větší kontrolu nad daty, prostředím a výkonem. U finančních dat a vlastního výzkumu
+              je soukromí zásadní konkurenční výhoda.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-button" type="button">
+              <span>Umí produkt garantovat přesnou predikci trhu?</span>
+              <span>+</span>
+            </button>
+            <div class="faq-content">
+              Ne. Finanční trhy jsou nejisté, nelineární a mění se v čase. Produkt je navržen tak, aby pomohl testovat,
+              měřit a zlepšovat modely — nikoli slibovat jistotu.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-button" type="button">
+              <span>Proč je důležitý skill vs persistence?</span>
+              <span>+</span>
+            </button>
+            <div class="faq-content">
+              Protože každý model by měl být porovnán s jednoduchou baseline. Pokud neuronová síť nepřekoná triviální
+              naivní predikci, její hezký graf ještě neznamená reálnou analytickou hodnotu.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="cta">
+      <div class="container">
+        <div class="cta">
+          <div class="eyebrow" style="justify-content:center">Začněte stavět vlastní modely</div>
+          <h2>
+            Udělejte z neuronových sítí svůj výzkumný nástroj — ne nedostupnou černou skříňku.
+          </h2>
+          <p>
+            REMIND Neural Forecaster for Windows je určen pro obchodníky, kteří chtějí jít hlouběji:
+            připravit data, trénovat model, sledovat telemetrii, měřit out-of-sample výkon a rozhodovat se podle výsledků.
+          </p>
+
+          <div class="cta-actions">
+            <a class="btn primary" href="mailto:info@remind.cz?subject=REMIND%20Neural%20Forecaster%20for%20Windows">
+              Požádat o přístup
+            </a>
+            <a class="btn green" href="#produkt">
+              Znovu projít vlastnosti
+            </a>
+            <a class="btn ghost" href="#faq">
+              Přečíst FAQ
+            </a>
+          </div>
+
+          <p style="font-size:13px;color:var(--muted);margin-top:18px">
+            Doporučeno pro uživatele s Windows 10/11 x64. Pro CUDA akceleraci je vyžadována kompatibilní NVIDIA GPU,
+            ovladač a CUDA runtime dle konkrétního buildu produktu.
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div>
+        <strong>REMIND Neural Forecaster for Windows</strong><br>
+        Lokální neuronová laboratoř pro forexový výzkum a multi-horizon predikce.
+      </div>
+      <div>
+        © 2026 REMIND.CZ · Tomáš Bělák<br>
+        Výzkumný software · Nejedná se o investiční doporučení.
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    document.querySelectorAll(".faq-button").forEach(function(button) {
+      button.addEventListener("click", function() {
+        var item = button.closest(".faq-item");
+        item.classList.toggle("open");
+      });
+    });
+
+    document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
+      anchor.addEventListener("click", function(e) {
+        var target = document.querySelector(anchor.getAttribute("href"));
+        if (!target) return;
+        e.preventDefault();
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+  </script>
+</body>
+</html>
